@@ -23,7 +23,8 @@ Download is only triggered once each time the script is run - so don't keep reru
 
 During your first query, the script will ask for your session token in order to download the input file. To get you session token, you need to follow the following steps :
 
-- go to the AOC website and inspect page (F12)
+- go to the AOC website (but do not login yet)
+- go to inspect page (F12)
 - go to the "network" section in the inspector (top right)
 - login and click to "login" request in the inspector (left side)
 - check for subsection "cookies" in the "network" section in inspector (right side)
