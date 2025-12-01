@@ -12,8 +12,8 @@ All inputs are cached locally
 
 User agent info is set from environment variables
 
-create a .env file and set:
-`AOC_USER_AGENT=<https://github.com/username/AdventOfCode2025 by email@example.com>
+create a `.env` file and set:
+`AOC_USER_AGENT=<https://github.com/username/AdventOfCode2025 by email@example.com>`
 
 ### Throttling
 
