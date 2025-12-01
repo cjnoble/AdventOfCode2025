@@ -31,6 +31,25 @@ During your first query, the script will ask for your session token in order to 
 - get the "session" value and paste it in the terminal
 - Your session token will automatically be saved in the hidden cache file .session_cache.lock
 
+## Scripts
+
+The repo contains the following scripts:
+
+### Templates
+
+- day_template.py - Template for the day
+- test_template.py - Template for the day's tests
+
+### Daily Set-Up
+
+- new_day.py - Create a new copy of the day_template and test_template, based on provided day argument.
+- daily_collect.py - Downloads a copy of the days inputs and test inputs from the AoC website. Then calls the new_day.py script.
+- collect.bat - Runs the daily_collect.py script with the specified command lines arguments
+
+### Useful Code
+
+- useful_code.py - Generic code likely to vbe useful for solving problems
+
 ## Retrieval of the daily problem
 
     #./collect day year
