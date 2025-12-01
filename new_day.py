@@ -8,9 +8,9 @@ def new_day(day:int):
     if not os.path.exists(day_path):
         with open(f"day_template.py", "r") as f_template:
             with open(day_path, "a") as f:
-                day = f_template.readlines()
-                day[21] = f"    DAY = \"{day_str}\"\n"
-                f.writelines(day)
+                day_data = f_template.readlines()
+                day_data[21] = f"    DAY = \"{day_str}\"\n"
+                f.writelines(day_data)
 
     test_path = f"day_{day_str}_test.py"
     if not os.path.exists(test_path):
