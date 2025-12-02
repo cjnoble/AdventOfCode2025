@@ -42,7 +42,7 @@ The repo contains the following scripts:
 
 ### Daily Set-Up
 
-- new_day.py - Create a new copy of the day_template and test_template, based on provided day argument.
+- new_day.py - Create a new copy of the day_template and test_template, based on provided day argument. Expected values for tests must be manually set.
 - daily_collect.py - Downloads a copy of the days inputs and test inputs from the AoC website. Then calls the new_day.py script.
 - collect.bat - Runs the daily_collect.py script with the specified command lines arguments
 
