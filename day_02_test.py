@@ -22,6 +22,39 @@ class TestMethods(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
+    def test_2_1(self):
+        cases = [
+            ("11-22", 11+22),
+            ("99-115", 99+111),
+            ("998-1012", 999+1010),
+        ]
+
+        for test_data, expected in cases:
+            with self.subTest(test_data=test_data, expected=expected):
+                result = day.part_2(test_data)
+                self.assertEqual(result, expected)
+
+    def test_part2_invalid(self):
+        cases = [
+            ("11", True),
+            ("12", False),
+            ("22", True),
+            ("99", True),
+            ("111", True),
+            ("100", False),
+            ("101", False),
+            ("102", False),
+            ("103", False),
+            ("104", False),
+            ("110", False),
+        ]
+
+        for test_data, expected in cases:
+            with self.subTest(test_data=test_data, expected=expected):
+                result = day.test_ID_invalid(test_data)
+                self.assertEqual(result, expected)
+
+
 
 if __name__ == '__main__':
     unittest.main()
