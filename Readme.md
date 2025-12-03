@@ -48,7 +48,7 @@ The repo contains the following scripts:
 
 ### Useful Code
 
-- useful_code.py - Generic code likely to vbe useful for solving problems
+- useful_code.py - Generic code likely to be useful for solving problems
 
 ## Retrieval of the daily problem
 

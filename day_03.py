@@ -65,6 +65,7 @@ def part_2(data):
 
     return sum_of_max_joltage
 
+
 if __name__ == "__main__":
 
     DAY = "03"
