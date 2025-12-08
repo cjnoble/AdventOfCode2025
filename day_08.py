@@ -71,9 +71,6 @@ def part_1(data, COUNTER = 1000):
         circuit_ref = None
         p1, p2 = point_pairs[i]
 
-        if p2 == Point(984, 92, 344):
-            print("Hi")
-
         for circuit_i, circuit in enumerate(circuits):
             if p1 in circuit:
                 if circuit_ref:
@@ -129,12 +126,9 @@ def part_2(data):
         circuit_ref = None
         p1, p2 = point_pairs[counter]
 
-        if counter == 28:
-            print("Hi")
-
         for circuit_i, circuit in enumerate(circuits):
             if p1 in circuit:
-                if circuit_ref:
+                if circuit_ref is not None:
                     circuits[circuit_ref] = circuits[circuit_ref].union(circuit)
                     circuits[circuit_i] = circuits[circuit_ref].union(circuit)
                 else:
@@ -142,7 +136,7 @@ def part_2(data):
                     circuit_ref = circuit_i
                     p_ref = (p1, p2)
             if p2 in circuit:
-                if circuit_ref:
+                if circuit_ref is not None:
                     circuits[circuit_ref] = circuits[circuit_ref].union(circuit)
                     circuits[circuit_i] = circuits[circuit_ref].union(circuit)
                 else:
