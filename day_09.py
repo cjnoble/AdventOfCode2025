@@ -2,6 +2,7 @@ import time
 import math as maths
 from collections import deque, defaultdict
 from useful_code import pairwise_cycle
+import matplotlib.pyplot as plt
 
 def read_text_file (file_path):
 
@@ -11,52 +12,155 @@ def read_text_file (file_path):
 
     return data
 
-def ccw(A, B, C):
-    """
-    Check the orientation of the ordered triplet (A, B, C).
-    Returns a value:
-    > 0: Counter-clockwise
-    < 0: Clockwise
-    = 0: Collinear
-    """
-    # Cross product calculation: (C.y - A.y) * (B.x - A.x) - (B.y - A.y) * (C.x - A.x)
-    val = (C.y - A.y) * (B.x - A.x) - (B.y - A.y) * (C.x - A.x)
-    if val == 0:
-        return 0  # Collinear
-    return 1 if val > 0 else -1 # Clockwise or Counter-clockwise
+def plot_polygon_and_rectangle(points, rect_points):
+    # Polygon
+    poly_x = [p.x for p in points] + [points[0].x]  # close the polygon
+    poly_y = [p.y for p in points] + [points[0].y]
 
-def segments_intersect(A, B, C, D):
+    plt.plot(poly_x, poly_y, 'b-o', label='Polygon')
+
+    # Rectangle
+    if rect_points:
+        p1, p2 = rect_points
+        min_x = min(p1.x, p2.x)
+        max_x = max(p1.x, p2.x)
+        min_y = min(p1.y, p2.y)
+        max_y = max(p1.y, p2.y)
+
+        rect_x = [min_x, max_x, max_x, min_x, min_x]
+        rect_y = [min_y, min_y, max_y, max_y, min_y]
+
+        plt.plot(rect_x, rect_y, 'r-', linewidth=2, label='Max Rectangle')
+        plt.fill(rect_x, rect_y, color='red', alpha=0.2)
+
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.legend()
+    plt.show()
+
+def classify_polygon_edges(points):
+    """Return lists of axis-aligned horizontal and vertical edges."""
+    horiz = []
+    vert = []
+
+    for p1, p2 in pairwise_cycle(points):
+        if p1.y == p2.y:
+            # horizontal edge
+            if p1.x <= p2.x:
+                horiz.append((p1, p2))
+            else:
+                horiz.append((p2, p1))
+        else:
+            # vertical edge
+            if p1.y <= p2.y:
+                vert.append((p1, p2))
+            else:
+                vert.append((p2, p1))
+
+    return horiz, vert
+
+
+def is_concave_vertex(prev, point, nxt):
     """
-    Check if line segment AB intersects line segment CD.
-    Endpoints are Point objects.
+    Determine whether a vertex is concave.
+    For axis-aligned polygons, this reduces to a simple 2D cross product sign.
     """
-    # General case: Find the four orientations needed for general and special cases
-    o1 = ccw(A, B, C)
-    o2 = ccw(A, B, D)
-    o3 = ccw(C, D, A)
-    o4 = ccw(C, D, B)
+    dx1 = point.x - prev.x
+    dy1 = point.y - prev.y
+    dx2 = nxt.x - point.x
+    dy2 = nxt.y - point.y
 
-    # General case: Segments intersect if and only if all orientations are different
-    # This means C and D are on different sides of AB, and A and B are on different sides of CD
-    if o1 != o2 and o3 != o4:
-        return True
+    # Orthogonal edges only: (dx1,dy1) and (dx2,dy2)
+    # Cross product z-component: dx1*dy2 - dy1*dx2
+    cross = dx1 * dy2 - dy1 * dx2
 
-    # Special Cases: Handle collinear points (o1 or o2 or o3 or o4 is 0)
-    
-    # # A, B and C are collinear and C lies on segment AB
-    # if o1 == 0 and (min(A.x, B.x) <= C.x <= max(A.x, B.x) and min(A.y, B.y) <= C.y <= max(A.y, B.y)):
-    #     return True
-    # # A, B and D are collinear and D lies on segment AB
-    # if o2 == 0 and (min(A.x, B.x) <= D.x <= max(A.x, B.x) and min(A.y, B.y) <= D.y <= max(A.y, B.y)):
-    #     return True
-    # # C, D and A are collinear and A lies on segment CD
-    # if o3 == 0 and (min(C.x, D.x) <= A.x <= max(C.x, D.x) and min(C.y, D.y) <= A.y <= max(C.y, D.y)):
-    #     return True
-    # # C, D and B are collinear and B lies on segment CD
-    # if o4 == 0 and (min(C.x, D.x) <= B.x <= max(C.x, D.x) and min(C.y, D.y) <= B.y <= max(C.y, D.y)):
-    #     return True
+    # For clockwise ordering, concave is where cross > 0.
+    return cross > 0
 
-    return False # Doesn't fall in any of the above cases
+
+def rectangle_edges(p1, p2):
+    """
+    Return the four axis-aligned rectangle edges between p1 and p2
+    in canonical min/max form.
+    """
+    min_x = min(p1.x, p2.x)
+    max_x = max(p1.x, p2.x)
+    min_y = min(p1.y, p2.y)
+    max_y = max(p1.y, p2.y)
+
+    bl = Point(min_x, min_y)
+    br = Point(max_x, min_y)
+    tr = Point(max_x, max_y)
+    tl = Point(min_x, max_y)
+
+    # Each is a pair (p1, p2)
+    # Horizontal bottom, top
+    bottom = (bl, br)
+    top = (tl, tr)
+
+    # Vertical left, right
+    left = (bl, tl)
+    right = (br, tr)
+
+    return bottom, top, left, right
+
+
+def horizontal_vertical_intersect(h, v):
+    """
+    Fast intersection test:
+    h = ((hx1, hy), (hx2, hy)) horizontal edge
+    v = ((vx, vy1), (vx, vy2)) vertical edge
+    """
+    (h1, h2) = h
+    (v1, v2) = v
+
+    return (
+        min(h1.x, h2.x) < v1.x < max(h1.x, h2.x) and
+        min(v1.y, v2.y) < h1.y < max(v1.y, v2.y)
+    )
+
+
+def rectangle_intersects_polygon(p1, p2, horiz_edges, vert_edges):
+    """
+    Check whether rectangle defined by p1 and p2 intersects polygon edges.
+    Using only axis-aligned HV or VH comparisons.
+    """
+    bottom, top, left, right = rectangle_edges(p1, p2)
+
+    # Check horizontal rectangle edges against vertical polygon edges
+    for h_edge in (bottom, top):
+        for v_edge in vert_edges:
+            if horizontal_vertical_intersect(h_edge, v_edge):
+                return True
+
+    # Check vertical rectangle edges against horizontal polygon edges
+    for v_edge in (left, right):
+        for h_edge in horiz_edges:
+            if horizontal_vertical_intersect(h_edge, v_edge):
+                return True
+
+    return False
+
+
+def concave_point_on_rectangle_boundary(p, p1, p2):
+    """
+    A concave vertex invalidates the rectangle only when lying exactly on rectangle boundary.
+    """
+    min_x = min(p1.x, p2.x)
+    max_x = max(p1.x, p2.x)
+    min_y = min(p1.y, p2.y)
+    max_y = max(p1.y, p2.y)
+
+    # On left or right boundary
+    if p.x == min_x or p.x == max_x:
+        if min_y < p.y < max_y:
+            return True
+
+    # On top or bottom boundary
+    if p.y == min_y or p.y == max_y:
+        if min_x < p.x < max_x:
+            return True
+
+    return False
 
 def edge_range(start, stop):
 
@@ -91,171 +195,6 @@ class Point (object):
     def area(self, other):
         return (1+ abs(self.x - other.x)) * (1+ abs(self.y - other.y))
     
-    def is_allowed(self, other, other_points):
-
-        for p1, p2 in pairwise_cycle(other_points):
-
-            # Edge 1
-            if segments_intersect(Point(self.x, self.y), Point(other.x, self.y), p1, p2):
-                return False
-
-            # Edge 2
-            if segments_intersect(Point(self.x, other.y), Point(other.x, other.y), p1, p2):
-                return False
-
-            # Edge 3
-            if segments_intersect(Point(self.x, self.y), Point(self.x, other.y), p1, p2):
-                return False
-
-            # Edge 4
-            if segments_intersect(Point(other.x, self.y), Point(other.x, other.y), p1, p2):
-                return False
-
-        return True
-
-    def is_allowed_1(self, other, all_points):
-
-        # Get all points on edges - but not the corners
-
-        # Edge 1
-        y = self.y
-        for x in edge_range(self.x, other.x):
-            point = str(Point(x, y))
-            if point in all_points:
-                if all_points[point].is_concave:
-                    return False
-
-        # Edge 2
-        y = other.y
-        for x in edge_range(self.x, other.x):
-            point = str(Point(x, y))
-            if point in all_points:
-                if all_points[point].is_concave:
-                    return False
-
-        # Edge 3
-        x = self.x
-        for y in edge_range(self.y, other.y):
-            point = str(Point(x, y))
-            if point in all_points:
-                if all_points[point].is_concave:
-                    return False
-        # Edge 4
-        x = other.x
-        for y in edge_range(self.y, other.y):
-            point = str(Point(x, y))
-            if point in all_points:
-                if all_points[point].is_concave:
-                    return False
-
-        return True
-
-# def part_1_2(data):
-
-#     points = [Point.from_input(row) for row in data]
-
-#     points_xmap = defaultdict(list)
-#     points_ymap = defaultdict(list)
-
-#     for p in points:
-#         points_xmap[p.x].append(p)
-#         points_ymap[p.y].append(p)
-
-#     lim_x_max = max(points_xmap.keys())
-#     lim_x_min = min(points_xmap.keys())
-#     lim_y_max = max(points_ymap.keys())
-#     lim_y_min = min(points_ymap.keys())
-
-#     range_x = lim_x_max - lim_x_min
-#     range_y = lim_y_max - lim_y_min
-
-#     counter = 0
-#     max_area = 0
-
-#     y_min_test_points = list()
-#     y_max_test_points = list()
-#     x_min_test_points = list()
-#     x_max_test_points = list()
-
-#     while True:
-
-#         min_x = lim_x_min + counter
-#         min_y = lim_y_min + counter
-#         max_x = lim_x_max - counter
-#         max_y = lim_y_max - counter
-
-#         # lhs_column = [[row[min_x]] for y, row in enumerate(data) if y >= min_y and y<max_y]
-#         # rhs_column = [[row[max_x]] for y, row in enumerate(data) if y >= min_y and y<max_y]
-        
-#         # top_row = data[min_y][min_x:max_x]
-#         # bottom_row = data[max_y-1][min_x:max_x]
-
-#         y_min_test_points.extend(points_ymap[min_y])
-#         y_max_test_points.extend(points_ymap[max_y])
-#         x_min_test_points.extend(points_xmap[min_x])
-#         x_max_test_points.extend(points_xmap[max_x])
-
-#         residual_area = (1 + abs(max_x - min_x))*(1 + abs(max_y-min_y))
-
-#         for point_y, point_x in zip(y_min_test_points, x_max_test_points):
-#             area = point_y.area(point_x)
-#             if area > max_area:
-#                 max_area = area
-
-#         for point_y, point_x in zip(y_max_test_points, x_min_test_points):
-#             area = point_y.area(point_x)
-#             if area > max_area:
-#                 max_area = area
-
-#         for point_y, point_x in zip(y_min_test_points, y_max_test_points):
-#             area = point_y.area(point_x)
-#             if area > max_area:
-#                 max_area = area
-
-#         for point_y, point_x in zip(x_max_test_points, x_min_test_points):
-#             area = point_y.area(point_x)
-#             if area > max_area:
-#                 max_area = area
-
-#         for point_y, point_x in zip(y_min_test_points, x_min_test_points):
-#             area = point_y.area(point_x)
-#             if area > max_area:
-#                 max_area = area
-
-#         for point_y, point_x in zip(y_max_test_points, x_max_test_points):
-#             area = point_y.area(point_x)
-#             if area > max_area:
-#                 max_area = area
-
-#         # for point_y, point_x in zip(y_min_test_points, y_min_test_points):
-#         #     area = point_y.area(point_x)
-#         #     if area > max_area:
-#         #         max_area = area
-
-#         # for point_y, point_x in zip(x_max_test_points, x_max_test_points):
-#         #     area = point_y.area(point_x)
-#         #     if area > max_area:
-#         #         max_area = area
-
-#         # for point_y, point_x in zip(y_max_test_points, y_max_test_points):
-#         #     area = point_y.area(point_x)
-#         #     if area > max_area:
-#         #         max_area = area
-
-#         # for point_y, point_x in zip(x_min_test_points, x_min_test_points):
-#         #     area = point_y.area(point_x)
-#         #     if area > max_area:
-#         #         max_area = area
-
-#         # if max_area > residual_area:
-#         #     break
-
-#         if counter > range_x and counter > range_y:
-#             break
-
-#         counter += 1
-
-#     return max_area
 
 def part_1(data):
 
@@ -271,81 +210,66 @@ def part_1(data):
 
     return max_area
 
-def part_2_2(data):
+def inside_rectangle(p1, p2, points):
 
-    points = [Point.from_input(row) for row in data]
-    points_dict = {str(point): point for point in points}
+    for point in points:
+        if point != p1 and point != p2:
 
-    for i in range(len(points)):
-        point = points[i]
-        previous = points[i-1]
-        next = points[(i+1)%len(points)]
+            if min(p1.x, p2.x) < point.x and max(p1.x, p2.x) > point.x and min(p1.y, p2.y) < point.y and max(p1.y, p2.y) > point.y:
+                return True
 
-        #Assume we are going clockwise
-
-        if previous.y == point.y:
-            # Same row
-            if previous.x < point.x and next.y < point.y:
-                point.is_concave = True
-            elif previous.x > point.x and next.y < point.y:
-                point.is_concave = True
-
-        else:
-            # same column
-            if previous.y < point.y and next.x > point.x:
-                point.is_concave = True
-            elif previous.y > point.y and next.x < point.x:
-                point.is_concave = True
-
-    
-    max_area = 0
-
-    for i, p1 in enumerate(points):
-        print(f"On p1 number {i} out of {len(points)}")
-        for j, p2 in enumerate(points):
-            area = p1.area(p2)
-            if area > max_area:
-                if p1.is_allowed(p2, points_dict):
-                    max_area = area
-
-    return max_area
+    return False
 
 def part_2(data):
-
     points = [Point.from_input(row) for row in data]
-    points_dict = {str(point): point for point in points}
+    N = len(points)
 
-    for i in range(len(points)):
+    # Determine concavity
+    for i in range(N):
+        prev = points[i - 1]
         point = points[i]
-        previous = points[i-1]
-        next = points[(i+1)%len(points)]
+        nxt = points[(i + 1) % N]
+        point.is_concave = is_concave_vertex(prev, point, nxt)
 
-        #Assume we are going clockwise
+    # Pre-classify polygon edges
+    horiz_edges, vert_edges = classify_polygon_edges(points)
 
-        if previous.y == point.y:
-            # Same row
-            if previous.x < point.x and next.y < point.y:
-                point.is_concave = True
-            elif previous.x > point.x and next.y < point.y:
-                point.is_concave = True
-
-        else:
-            # same column
-            if previous.y < point.y and next.x > point.x:
-                point.is_concave = True
-            elif previous.y > point.y and next.x < point.x:
-                point.is_concave = True
-
-    
+    # Solve
     max_area = 0
+    best_rect = None
 
     for i, p1 in enumerate(points):
-        print(f"On p1 number {i} out of {len(points)}")
-        for j, p2 in enumerate(points):
-            area = p1.area(p2)
-            if area > max_area:
-                if p1.is_allowed(p2, points):
-                    max_area = area
+        print(f"p1: {i+1}/{N}")
+
+        for p2 in points:
+            if p1 is p2:
+                continue
+
+            test_area = p1.area(p2)
+            if test_area <= max_area:
+                continue
+
+            # Check rectangle vs polygon intersection
+            if rectangle_intersects_polygon(p1, p2, horiz_edges, vert_edges):
+                continue
+
+            # Check no concave point lies on boundary
+            boundary_ok = True
+            for cp in points:
+                if cp.is_concave and concave_point_on_rectangle_boundary(cp, p1, p2):
+                    boundary_ok = False
+                    break
+
+            if not boundary_ok:
+                continue
+
+            if inside_rectangle(p1, p2, points):
+                continue
+
+            max_area = test_area
+            best_rect = (p1, p2) 
+
+    plot_polygon_and_rectangle(points, best_rect)
 
     return max_area
 
