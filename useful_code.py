@@ -1,4 +1,4 @@
-from itertools import tee
+from itertools import tee, cycle
 
 def read_text_file (file_path):
 
@@ -22,6 +22,13 @@ def pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
+
+def pairwise_cycle(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    b_cycled = cycle(b)
+    next(b_cycled, None)
+    return zip(a, b_cycled)
 
 class Point(object):
 
