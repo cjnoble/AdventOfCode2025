@@ -52,6 +52,18 @@ class TestMethods(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
+    def test_rectangle_intersects_polygon(self):
+        expected = False
+
+        points = [day.Point.from_input(row) for row in test_data]
+
+        h_edges, v_edges = day.classify_polygon_edges(points)
+
+        result = day.rectangle_intersects_polygon(day.Point(9, 5), day.Point(2, 3), h_edges, v_edges)
+
+        self.assertEqual(result, expected)
+
+
     def test_2(self):
 
         expected = 24
@@ -59,7 +71,6 @@ class TestMethods(unittest.TestCase):
         result = day.part_2(test_data)
 
         self.assertEqual(result, expected)
-
 
 if __name__ == '__main__':
     unittest.main()
